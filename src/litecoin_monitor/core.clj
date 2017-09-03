@@ -1,7 +1,8 @@
 (ns litecoin-monitor.core
   (:require [clj-http.client :as client]
             [cheshire.core :refer [parse-string]]
-            [clojure.java.io :as io]))
+            [clojure.java.io :as io])
+  (:gen-class))
 
 (defn load-config [filename]
   (with-open [r (io/reader filename)]
