@@ -23,7 +23,7 @@
     (get-in ["user" "hash_rate"])))
 
 (defn hashrate-in-bound [real expected]
-  (let [lower-bound (* 0.9 expected)]
+  (let [lower-bound (* (:treshold config) expected)]
     (>= real lower-bound)))
 
 (defn monitor [endpoints]
