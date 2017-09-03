@@ -1,0 +1,8 @@
+{
+  :miners [
+    {:name "Miner Name" :src "API URL" :expected 500000}
+  ]
+  :ever-min 5
+  :treshold 0.9
+  :slack-url "URL"
+}

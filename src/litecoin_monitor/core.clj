@@ -54,7 +54,7 @@
   (when
     (not-empty msg)
     (client/post
-      "https://hooks.slack.com/services/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"
+      (:slack-url config)
       {:form-params {:text msg}
        :content-type :json})))
 
