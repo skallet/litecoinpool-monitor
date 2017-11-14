@@ -149,11 +149,16 @@
   "I don't do a whole lot ... yet."
   [& args]
   (start-scheduler)
+  (run-watcher)
+  (run-eth-watcher)
   (let [sched-list (list
                      (scheduled-item (every (:ever-min config) :minutes) #(run-watcher))
                      (scheduled-item (every (:ever-min config) :minutes) #(run-eth-watcher))
                      (scheduled-item
                       (daily
                        (at (hour 22) (minute 50)))
-                      #(run-reporter)))]
-    (map #(start-schedule %1) sched-list)))
+                      #(run-reporter)))
+        sched-ids (map #(start-schedule %1) sched-list)]
+    (while true
+      ; (println sched-ids)
+      (Thread/sleep (* 1000 60)))))
