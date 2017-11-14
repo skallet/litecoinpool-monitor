@@ -4,6 +4,7 @@
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [[org.clojure/clojure "1.8.0"]
+                 [factual/timely "0.0.3"]
                  [clj-http "3.7.0"]
                  [cheshire "5.8.0"]]
   :main ^:skip-aot litecoin-monitor.core

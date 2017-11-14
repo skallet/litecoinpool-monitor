@@ -1,7 +1,8 @@
 (ns litecoin-monitor.core
   (:require [clj-http.client :as client]
             [cheshire.core :refer [parse-string]]
-            [clojure.java.io :as io])
+            [clojure.java.io :as io]
+            [timely.core :refer :all])
   (:gen-class))
 
 (defn load-config [filename]
@@ -123,36 +124,36 @@
 (defn create-job [job every-ms]
   (set-interval job every-ms))
 
-(defn start-watcher []
-  (create-job
-    #(->
-      endpoints
-      (monitor)
-      (create-notify-messages)
-      (submit-when-message))
-    (* (:ever-min config) 60 1000)))
+(defn run-watcher []
+  (->
+    endpoints
+    (monitor)
+    (create-notify-messages)
+    (submit-when-message)))
 
-(defn start-eth-watcher []
-  (create-job
-    #(->
-      eth-endpoints
-      (eth-monitor)
-      (create-eth-notify-messages)
-      (submit-when-message))
-    (* (:ever-min config) 60 1000)))
+(defn run-eth-watcher []
+  (->
+    eth-endpoints
+    (eth-monitor)
+    (create-eth-notify-messages)
+    (submit-when-message)))
 
-(defn start-reporter []
-  (create-job
-    #(->
-      endpoints
-      (map-endpoints)
-      (create-report-message)
-      (submit-when-message))
-    (* 24 60 60 1000)))
+(defn run-reporter []
+  (->
+    endpoints
+    (map-endpoints)
+    (create-report-message)
+    (submit-when-message)))
 
 (defn -main
   "I don't do a whole lot ... yet."
   [& args]
-  (start-watcher)
-  (start-eth-watcher)
-  (start-reporter))
+  (start-scheduler)
+  (let [sched-list (list
+                     (scheduled-item (every (:ever-min config) :minutes) #(run-watcher))
+                     (scheduled-item (every (:ever-min config) :minutes) #(run-eth-watcher))
+                     (scheduled-item
+                      (daily
+                       (at (hour 22) (minute 50)))
+                      #(run-reporter)))]
+    (map #(start-schedule %1) sched-list)))
