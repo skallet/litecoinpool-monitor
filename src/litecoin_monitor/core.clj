@@ -159,6 +159,6 @@
                        (at (hour 22) (minute 50)))
                       #(run-reporter)))
         sched-ids (map #(start-schedule %1) sched-list)]
+    (println sched-ids)
     (while true
-      ; (println sched-ids)
       (Thread/sleep (* 1000 60)))))
