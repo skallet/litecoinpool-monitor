@@ -10,6 +10,7 @@
 
 (def config (load-config "miner.properties"))
 (def endpoints (:miners config))
+(def eth-endpoints (:ethdistro config))
 
 (defn get-pool-data [src]
   (->
@@ -45,13 +46,25 @@
                  :past-reward (get-past-reward data)}))
     endpoints))
 
+(defn map-eth-endpoints [endpoints]
+  (map
+    #(let [data (get-pool-data (:src %1))
+           rig (:rig %1)]
+       (merge %1 {:rate (get-param data ["rigs" rig "hash"])}))
+    endpoints))
+
 (defn monitor [endpoints]
   (filter
     #(not (hashrate-in-bound (:rate %1) (:expected %1)))
     (map-endpoints endpoints)))
 
-(defn format-hashrate [rate]
-  (str (quot rate 1000) "MH/s"))
+(defn eth-monitor [endpoints]
+  (filter
+    #(not (hashrate-in-bound (:rate %1) (:expected %1)))
+    (map-eth-endpoints endpoints)))
+
+(defn format-hashrate [rate dividor]
+  (str (quot rate dividor) "MH/s"))
 
 (defn create-report-message [endpoints]
   (clojure.string/join
@@ -75,9 +88,23 @@
           "Miner: *"
           (:name %1)
           "* has expected rate _"
-          (format-hashrate (:expected %1))
+          (format-hashrate (:expected %1) 1000)
           "_ but signaling _"
-          (format-hashrate (:rate %1))
+          (format-hashrate (:rate %1) 1000)
+          "_")
+      endpoints)))
+
+(defn create-eth-notify-messages [endpoints]
+  (clojure.string/join
+    "\n"
+    (map
+      #(str
+          "GPU Miner: *"
+          (:name %1)
+          "* has expected rate _"
+          (format-hashrate (:expected %1) 1)
+          "_ but signaling _"
+          (format-hashrate (:rate %1) 1)
           "_")
       endpoints)))
 
@@ -105,6 +132,15 @@
       (submit-when-message))
     (* (:ever-min config) 60 1000)))
 
+(defn start-eth-watcher []
+  (create-job
+    #(->
+      eth-endpoints
+      (eth-monitor)
+      (create-eth-notify-messages)
+      (submit-when-message))
+    (* (:ever-min config) 60 1000)))
+
 (defn start-reporter []
   (create-job
     #(->
@@ -114,9 +150,9 @@
       (submit-when-message))
     (* 24 60 60 1000)))
 
-
 (defn -main
   "I don't do a whole lot ... yet."
   [& args]
   (start-watcher)
+  (start-eth-watcher)
   (start-reporter))
