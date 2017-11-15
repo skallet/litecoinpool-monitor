@@ -35,8 +35,8 @@
   (get-param pool-data ["user" "past_24h_rewards"]))
 
 
-(defn hashrate-in-bound [real expected]
-  (let [lower-bound (* (:treshold config) expected)]
+(defn hashrate-in-bound [real expected treshold]
+  (let [lower-bound (* treshold expected)]
     (>= real lower-bound)))
 
 (defn map-endpoints [endpoints]
@@ -56,12 +56,18 @@
 
 (defn monitor [endpoints]
   (filter
-    #(not (hashrate-in-bound (:rate %1) (:expected %1)))
+    #(not (hashrate-in-bound
+            (:rate %1)
+            (:expected %1)
+            (:treshold-ltc config)))
     (map-endpoints endpoints)))
 
 (defn eth-monitor [endpoints]
   (filter
-    #(not (hashrate-in-bound (:rate %1) (:expected %1)))
+    #(not (hashrate-in-bound
+            (:rate %1)
+            (:expected %1)
+            (:treshold-eth config)))
     (map-eth-endpoints endpoints)))
 
 (defn format-hashrate [rate dividor]
@@ -146,17 +152,17 @@
     (submit-when-message)))
 
 (defn -main
-  "I don't do a whole lot ... yet."
+  "Start scheduler and run watchers with reporters."
   [& args]
   (start-scheduler)
   (run-watcher)
   (run-eth-watcher)
   (let [sched-list (list
-                     (scheduled-item (every (:ever-min config) :minutes) #(run-watcher))
-                     (scheduled-item (every (:ever-min config) :minutes) #(run-eth-watcher))
+                     (scheduled-item (every (:every-min config) :minutes) #(run-watcher))
+                     (scheduled-item (every (:every-min config) :minutes) #(run-eth-watcher))
                      (scheduled-item
                       (daily
-                       (at (hour 22) (minute 50)))
+                       (at (hour (:run-hour config)) (minute (:run-minutes config))))
                       #(run-reporter)))
         sched-ids (map #(start-schedule %1) sched-list)]
     (println sched-ids)
